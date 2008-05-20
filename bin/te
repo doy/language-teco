@@ -1,0 +1,83 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use Language::TECO;
+use Term::ReadKey;
+
+ReadMode 4;
+END { ReadMode 0 }
+
+my $te = Language::TECO->new;
+
+sub command_as_string {
+    my $command = shift;
+
+    $command =~ s{([[:cntrl:]])}{
+                    $1 eq "\n" ? "\n" : "^" . chr(ord('A') + ord($1) - 1)
+                }e;
+
+    return $command;
+}
+
+my $command = '';
+COMMAND: while (1) {
+    print '*';
+    KEY: while (my $c = ReadKey 0) {
+        my $pc = substr($command, -1);
+        if ($c eq "\e") {
+            print '$';
+            if ($pc eq "\e") {
+                print "\n";
+                ReadMode 3;
+                eval { $te->execute($command) };
+                print "ERROR: $@\n" if $@;
+                ReadMode 4;
+                last KEY;
+            }
+        }
+        elsif ($c eq "\cc") {
+            last COMMAND;
+        }
+        elsif ($c eq chr(127)) {
+            print "\ch \ch" if $pc ne '';
+            substr($command, -1, 1) = '';
+            next KEY;
+        }
+        elsif ($c eq "\cu") {
+            my $new_command = $command;
+            $new_command =~ s/.*$//;
+            print "\ch \ch" x (length($command) - length($new_command));
+            $command = $new_command;
+            next KEY;
+        }
+        elsif ($c eq "\cg" && $pc eq "\cg") {
+            print "\n";
+            last KEY;
+        }
+        elsif ($c eq '*' && $pc eq "\cg") {
+            substr($command, -1, 1) = '';
+            print "\n*", command_as_string $command;
+            next KEY;
+        }
+        elsif ($c eq ' ' && $pc eq "\cg") {
+            substr($command, -1, 1) = '';
+            print "\n";
+            $command =~ /(.*)$/;
+            my $last_line = $1;
+            print '*' if $last_line eq $command;
+            print command_as_string $last_line;
+            next KEY;
+        }
+        elsif ($c eq '?' && $pc eq '') {
+            print "\ntodo...\n";
+        }
+        elsif ($c =~ /[[:alnum:]]/ && $command eq '*') {
+            print "\ntodo...\n";
+        }
+        else {
+            print command_as_string($c);
+        }
+        $command .= $c;
+    }
+    $command = '';
+}
