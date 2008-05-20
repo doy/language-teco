@@ -10,7 +10,7 @@ sub new {
 sub set {
     my $self = shift;
     my $pointer = shift;
-    return if $pointer < 0 || $pointer > length $self->{buffer}
+    return if $pointer < 0 || $pointer > length $self->{buffer};
     $self->{pointer} = $pointer;
 }
 
