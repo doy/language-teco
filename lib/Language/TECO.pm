@@ -2,8 +2,14 @@
 package Language::TECO;
 use strict;
 use warnings;
+use Language::TECO::Buffer;
 
+sub new {
+    return bless { buffer => Language::TECO::Buffer->new }, shift;
+}
 
+sub execute {
+}
 
 =head1 NAME
 
