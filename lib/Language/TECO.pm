@@ -5,10 +5,169 @@ use warnings;
 use Language::TECO::Buffer;
 
 sub new {
-    return bless { buffer => Language::TECO::Buffer->new }, shift;
+    my $class = shift;
+    my $object = { buffer => Language::TECO::Buffer->new };
+    bless $object, $class;
+    $object->reset;
+    return $object;
+}
+
+sub reset {
+    my $self = shift;
+
+    $self->{command} = '';
+    $self->{current_num} = 'n1';
+    $self->{n1} = undef;
+    $self->{n2} = undef;
+    $self->{at} = 0;
+    $self->{colon} = 0;
+    $self->{negate} = 0;
+}
+
+sub num {
+    my $self = shift;
+    my $num = shift;
+
+    if (defined $num) {
+        if ($self->{negate}) {
+            $num = -$num;
+            $self->{negate} = 0;
+        }
+        $self->{$self->{current_num}} = $num;
+    }
+    else {
+        if (wantarray) {
+            return ($self->{n1}, $self->{n2});
+        }
+        else {
+            return $self->{$self->{current_num}};
+        }
+    }
+}
+
+sub cmd {
+    my $self = shift;
+    my $code = shift;
+
+    $self->{current_num} = 'n1';
+
+    $code->($self);
+
+    $self->reset;
+}
+
+sub cmd_with_string {
+    my $self = shift;
+    my $code = shift;
+
+    return $self->cmd(sub {
+        my $self = shift;
+        my $str = '';
+
+        if ($self->{at}) {
+            my $dummy;
+            ($dummy, $str) = $self->{command} =~ s/(.)(.*?)\1//;
+        }
+        else {
+            ($str) = $self->{command} =~ s/(.*?)\e//;
+        }
+
+        $code->($self, $str);
+    });
+}
+
+sub push_cmd {
+    my $self = shift;
+    $self->{command} = shift . $self->{command};
 }
 
 sub execute {
+    my $self = shift;
+    $self->{command} = shift;
+
+    while ($self->{command}) {
+        $_ = substr($self->{command}, 0, 1, '');
+        if (/[0-9]/) {
+            my $num = $self->num || 0;
+            $self->num($num * 10 + $_);
+        }
+        elsif (/-/) {
+            $self->{negate} = 1;
+        }
+        elsif (/b/i) {
+            $self->num(0);
+        }
+        elsif (/z/i) {
+            $self->num(length $self->{buffer}->{buffer});
+        }
+        elsif (/\./) {
+            $self->num($self->{buffer}->{pointer});
+        }
+        elsif (/h/i) {
+            $self->push_cmd('b,z');
+            redo;
+        }
+        elsif (/\cy/) {
+            $self->push_cmd(".+\cs,.");
+            redo;
+        }
+        elsif (/,/) {
+            $self->{current_num} = 'n2';
+        }
+        elsif (/i/i) {
+            if (defined $self->num) {
+                $self->cmd(sub {
+                    my $self = shift;
+                    $self->{buffer}->insert(chr($self->num))
+                });
+            }
+            else {
+                $self->cmd_with_string(sub {
+                    my $self = shift;
+                    $self->{buffer}->insert(shift);
+                });
+            }
+        }
+        elsif (/d/i) {
+            if (defined $self->{n2}) {
+                $self->push_cmd('k');
+                redo;
+            }
+            if (!defined $self->num) {
+                $self->num(1);
+            }
+            $self->cmd(sub {
+                my $self = shift;
+                $self->{buffer}->delete($self->num);
+            });
+        }
+        elsif (/j/i) {
+            if (!defined $self->num) {
+                $self->num(0);
+            }
+            $self->cmd(sub {
+                my $self = shift;
+                $self->{buffer}->set($self->num);
+            });
+        }
+        elsif (/c/i) {
+            if (!defined $self->num) {
+                $self->num(1);
+            }
+            $self->cmd(sub {
+                my $self = shift;
+                $self->{buffer}->offset($self->num);
+            });
+        }
+        elsif (/r/i) {
+            if (!defined $self->num) {
+                $self->num(1);
+            }
+            $self->num(-$self->num);
+            $self->push_cmd('c');
+            redo;
+        }
+    }
 }
 
 =head1 NAME
