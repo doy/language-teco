@@ -65,11 +65,12 @@ sub cmd_with_string {
         my $str = '';
 
         if ($self->{at}) {
-            my $dummy;
-            ($dummy, $str) = $self->{command} =~ s/(.)(.*?)\1//;
+            $self->{command} =~ s/(.)(.*?)\1//;
+            $str = $2;
         }
         else {
-            ($str) = $self->{command} =~ s/(.*?)\e//;
+            $self->{command} =~ s/(.*?)\e//;
+            $str = $1;
         }
 
         $code->($self, $str);
