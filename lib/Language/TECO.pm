@@ -78,7 +78,8 @@ sub cmd_with_string {
 
 sub push_cmd {
     my $self = shift;
-    $self->{command} = shift . $self->{command};
+    my $to_push = shift;
+    $self->{command} = $to_push . $self->{command};
 }
 
 sub execute {
