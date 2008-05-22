@@ -31,7 +31,16 @@ sub insert {
 
 sub delete {
     my $self = shift;
-    my $length = shift;
+    my $length;
+    if (@_ > 1) {
+        my $pos = shift;
+        $self->set($pos);
+        $length = shift() - $pos;
+    }
+    else {
+        $length = shift;
+    }
+
     if ($length < 0) {
         $length = -$length;
         $self->offset(-$length);
