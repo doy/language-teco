@@ -41,6 +41,9 @@ sub endpos { length shift->{buffer} }
 sub curpos { shift->{pointer} }
 
 sub print {
+    my $self = shift;
+    my ($start, $end) = @_;
+    print substr $self->{buffer}, $start, $end - $start;
 }
 
 1;
