@@ -10,10 +10,21 @@ sub new {
     return bless { buffer => $initial_buffer, pointer => 0 }, $class;
 }
 
+sub curpos { shift->{pointer} }
+
+sub endpos { length shift->{buffer} }
+
+sub buffer {
+    my $self = shift;
+    my $start = shift || 0;
+    my $end = shift || $self->endpos;
+    return substr $self->{buffer}, $start, $end - $start;
+}
+
 sub set {
     my $self = shift;
     my $pointer = shift;
-    die 'Pointer off page' if $pointer < 0 || $pointer > length $self->{buffer};
+    die 'Pointer off page' if $pointer < 0 || $pointer > $self->endpos;
     $self->{pointer} = $pointer;
     return;
 }
@@ -27,7 +38,7 @@ sub offset {
 sub insert {
     my $self = shift;
     my $text = shift;
-    substr($self->{buffer}, $self->{pointer}, 0) = $text;
+    substr($self->{buffer}, $self->curpos, 0) = $text;
     $self->offset(length $text);
     return;
 }
@@ -49,19 +60,9 @@ sub delete {
         $self->offset(-$length);
     }
     die "Pointer off page"
-        if $self->{pointer} + $length > length $self->{buffer};
-    substr($self->{buffer}, $self->{pointer}, $length) = '';
+        if $self->curpos + $length > $self->endpos;
+    substr($self->{buffer}, $self->curpos, $length) = '';
     return;
-}
-
-sub endpos { length shift->{buffer} }
-
-sub curpos { shift->{pointer} }
-
-sub print {
-    my $self = shift;
-    my ($start, $end) = @_;
-    return substr $self->{buffer}, $start, $end - $start;
 }
 
 sub get_line_offset {
@@ -69,16 +70,16 @@ sub get_line_offset {
     my $num = shift;
 
     if ($num > 0) {
-        pos $self->{buffer} = $self->{pointer};
+        pos $self->{buffer} = $self->curpos;
         $self->{buffer} =~ /(?:.*(?:\n|$)){$num}/g;
         return ($-[0], $+[0]) if wantarray;
         return $+[0];
     }
     else {
         $num = -$num;
-        my $rev = reverse $self->{buffer};
-        my $len = length $self->{buffer};
-        pos $rev = $len - $self->{pointer};
+        my $rev = reverse $self->buffer;
+        my $len = $self->endpos;
+        pos $rev = $len - $self->curpos;
         $rev =~ /.*?(?:\n.*?){$num}(?=\n|$)/g;
         return ($len - $+[0], $len - $-[0]) if wantarray;
         return $len - $+[0];
