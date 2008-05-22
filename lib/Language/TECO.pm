@@ -40,7 +40,7 @@ sub num {
         $self->{$self->{current_num}} = $num;
     }
     else {
-        if (wantarray) {
+        if (wantarray && defined $self->{n2}) {
             return ($self->{n1}, $self->{n2});
         }
         else {
@@ -158,7 +158,7 @@ sub execute {
             $self->cmd(sub {
                 my $self = shift;
                 if (defined $self->{n2}) {
-                    $self->{buffer}->delete(($self->num));
+                    $self->{buffer}->delete($self->num);
                 }
                 else {
                     if (!defined $self->num) {
