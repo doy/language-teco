@@ -95,6 +95,7 @@ sub execute {
         $_ = substr($self->{command}, 0, 1, '');
         if (/[0-9]/) {
             my $num = $self->num || 0;
+            $_ = -$_ if $num < 0;
             $self->num($num * 10 + $_);
         }
         elsif (/-/) {
