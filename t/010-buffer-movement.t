@@ -1,7 +1,7 @@
 #!perl -T
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Language::TECO;
 
 my $buftext = "this is\nan initial buffer";
