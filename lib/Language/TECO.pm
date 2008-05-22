@@ -116,6 +116,12 @@ sub execute {
         elsif (/,/) {
             $self->{current_num} = 'n2';
         }
+        elsif (/:/) {
+            $self->{colon} = 1;
+        }
+        elsif (/@/) {
+            $self->{at} = 1;
+        }
         elsif (/i/i) {
             if (defined $self->num) {
                 $self->cmd(sub {
