@@ -4,7 +4,10 @@ use warnings;
 package Language::TECO::Buffer;
 
 sub new {
-    return bless { buffer => '', pointer => 0 }, shift;
+    my $class = shift;
+    my $initial_buffer = shift;
+    $initial_buffer = '' unless defined $initial_buffer;
+    return bless { buffer => $initial_buffer, pointer => 0 }, $class;
 }
 
 sub set {

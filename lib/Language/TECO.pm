@@ -6,7 +6,8 @@ use Language::TECO::Buffer;
 
 sub new {
     my $class = shift;
-    my $object = { buffer => Language::TECO::Buffer->new };
+    my $initial_buffer = shift;
+    my $object = { buffer => Language::TECO::Buffer->new($initial_buffer) };
     bless $object, $class;
     $object->reset;
     return $object;
