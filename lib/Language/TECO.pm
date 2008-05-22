@@ -195,6 +195,15 @@ sub execute {
             $self->push_cmd('c');
             redo;
         }
+        elsif (/l/i) {
+            $self->cmd(sub {
+                my $self = shift;
+                if (!defined $self->num) {
+                    $self->num(1);
+                }
+                $self->{buffer}->set(scalar $self->{buffer}->get_line_offset($self->num));
+            });
+        }
         elsif (/t/i) {
             $self->cmd(sub {
                 my $self = shift;
