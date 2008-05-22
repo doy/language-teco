@@ -3,7 +3,7 @@ package Language::TECO;
 use strict;
 use warnings;
 use Language::TECO::Buffer;
-use base 'Class::Accessor::Fast'
+use base 'Class::Accessor::Fast';
 Language::TECO->mk_accessors qw/at colon negate current_num/;
 Language::TECO->mk_ro_accessors qw/buffer/;
 
