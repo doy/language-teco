@@ -34,8 +34,10 @@ sub delete {
     my $length = shift;
     if ($length < 0) {
         $length = -$length;
-        $self->{pointer} -= $length;
+        $self->offset(-$length);
     }
+    die "Pointer off page"
+        if $self->{pointer} + $length > length $self->{buffer};
     substr($self->{buffer}, $self->{pointer}, $length) = '';
 }
 
