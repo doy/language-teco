@@ -6,7 +6,7 @@ use Test::Exception;
 use Language::TECO;
 
 my @test_cmds = qw/j c d/;
-plan tests => @test_cmds * 4;
+plan tests => @test_cmds * 6;
 
 my $buftext = "this is\nan initial buffer";
 my $te = Language::TECO->new($buftext);
