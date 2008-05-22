@@ -5,6 +5,8 @@ use inc::Module::Install;
 name           'Language-TECO';
 all_from       'lib/Language/TECO.pm';
 
+requires 'Class::Accessor::Fast';
+
 feature 'Command line te script' =>
         -default => 1,
         'Term::ReadKey' => '0';
