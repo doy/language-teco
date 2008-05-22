@@ -194,6 +194,7 @@ sub execute {
                                                $+[0]);
                     }
                     else {
+                        $num = -$num;
                         my $rev = reverse $self->{buffer}->{buffer};
                         my $regex = ".*?(?:\n.*?){$num}(?=\n|\$)";
                         pos $rev = length($self->{buffer}->{buffer}) - $self->{buffer}->{pointer};
