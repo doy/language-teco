@@ -5,21 +5,21 @@ use warnings;
 use Language::TECO::Buffer;
 use base 'Class::Accessor::Fast';
 Language::TECO->mk_accessors qw/at colon negate current_num/;
-Language::TECO->mk_ro_accessors qw/buffer/;
+Language::TECO->mk_ro_accessors qw/buf/;
 
 sub new {
     my $class = shift;
     my $initial_buffer = shift;
-    my $object = { buffer => Language::TECO::Buffer->new($initial_buffer) };
+    my $object = { buf => Language::TECO::Buffer->new($initial_buffer) };
     bless $object, $class;
     $object->reset;
     return $object;
 }
 
-sub buffer    { shift->{buffer}->buffer(@_)  }
-sub pointer   { shift->{buffer}->curpos      }
-sub buflen    { shift->{buffer}->endpos      }
-sub has_range { defined shift->{n2}          }
+sub buffer    { shift->buf->buffer(@_) }
+sub pointer   { shift->buf->curpos     }
+sub buflen    { shift->buf->endpos     }
+sub has_range { defined shift->{n2}    }
 
 sub reset {
     my $self = shift;
@@ -137,13 +137,13 @@ sub execute {
             if (defined $self->num) {
                 $self->cmd(sub {
                     my $self = shift;
-                    $self->buffer->insert(chr($self->num))
+                    $self->buf->insert(chr($self->num))
                 });
             }
             else {
                 $self->cmd_with_string(sub {
                     my $self = shift;
-                    $self->buffer->insert(shift);
+                    $self->buf->insert(shift);
                 });
             }
         }
@@ -157,21 +157,21 @@ sub execute {
             }
             $self->cmd(sub {
                 my $self = shift;
-                $self->buffer->delete($self->num);
+                $self->buf->delete($self->num);
             });
         }
         elsif (/k/i) {
             $self->cmd(sub {
                 my $self = shift;
                 if ($self->has_range) {
-                    $self->buffer->delete($self->num);
+                    $self->buf->delete($self->num);
                 }
                 else {
                     if (!defined $self->num) {
                         $self->num(1);
                     }
                     my $num = $self->num;
-                    $self->buffer->delete($self->buffer->get_line_offset($num));
+                    $self->buf->delete($self->buf->get_line_offset($num));
                 }
             });
         }
@@ -181,7 +181,7 @@ sub execute {
             }
             $self->cmd(sub {
                 my $self = shift;
-                $self->buffer->set($self->num);
+                $self->buf->set($self->num);
             });
         }
         elsif (/c/i) {
@@ -190,7 +190,7 @@ sub execute {
             }
             $self->cmd(sub {
                 my $self = shift;
-                $self->buffer->offset($self->num);
+                $self->buf->offset($self->num);
             });
         }
         elsif (/r/i) {
@@ -207,21 +207,21 @@ sub execute {
                 if (!defined $self->num) {
                     $self->num(1);
                 }
-                $self->buffer->set(scalar $self->buffer->get_line_offset($self->num));
+                $self->buf->set(scalar $self->buf->get_line_offset($self->num));
             });
         }
         elsif (/t/i) {
             $self->cmd(sub {
                 my $self = shift;
                 if ($self->has_range) {
-                    $self->buffer->print(($self->num));
+                    $self->buffer(($self->num));
                 }
                 else {
                     if (!defined $self->num) {
                         $self->num(1);
                     }
                     my $num = $self->num;
-                    $ret .= $self->buffer->buffer($self->buffer->get_line_offset($num));
+                    $ret .= $self->buffer($self->buf->get_line_offset($num));
                 }
             });
         }
