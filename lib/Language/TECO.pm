@@ -191,21 +191,7 @@ sub execute {
                         $self->num(1);
                     }
                     my $num = $self->num;
-                    if ($num > 0) {
-                        my $regex = "(?:.*(?:\n|\$)){$num}";
-                        pos $self->{buffer}->{buffer} = $self->{buffer}->{pointer};
-                        $self->{buffer}->{buffer} =~ /$regex/g;
-                        $self->{buffer}->print($self->{buffer}->{pointer},
-                                               $+[0]);
-                    }
-                    else {
-                        $num = -$num;
-                        my $rev = reverse $self->{buffer}->{buffer};
-                        my $regex = ".*?(?:\n.*?){$num}(?=\n|\$)";
-                        pos $rev = length($self->{buffer}->{buffer}) - $self->{buffer}->{pointer};
-                        $rev =~ /$regex/sg;
-                        $self->{buffer}->print(length($self->{buffer}->{buffer}) - $+[0], $self->{buffer}->{pointer});
-                    }
+                    $self->{buffer}->print($self->{buffer}->get_line_offset($num));
                 }
             });
         }

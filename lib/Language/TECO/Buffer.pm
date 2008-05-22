@@ -51,4 +51,23 @@ sub print {
     print substr $self->{buffer}, $start, $end - $start;
 }
 
+sub get_line_offset {
+    my $self = shift;
+    my $num = shift;
+
+    if ($num > 0) {
+        pos $self->{buffer} = $self->{pointer};
+        $self->{buffer} =~ /(?:.*(?:\n|$)){$num}/g;
+        return ($-[0], $+[0]);
+    }
+    else {
+        $num = -$num;
+        my $rev = reverse $self->{buffer};
+        my $len = length $self->{buffer};
+        pos $rev = $len - $self->{pointer};
+        $rev =~ /.*?(?:\n.*?){$num}(?=\n|$)/g;
+        return ($len - $+[0], $len - $-[0]);
+    }
+}
+
 1;
