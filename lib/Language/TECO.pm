@@ -175,6 +175,31 @@ sub execute {
             $self->push_cmd('c');
             redo;
         }
+        elsif (/t/i) {
+            $self->cmd(sub {
+                my $self = shift;
+                if (defined $self->{n2}) {
+                    $self->{buffer}->print(($self->num));
+                }
+                else {
+                    my $num = $self->num;
+                    if ($num > 0) {
+                        my $regex = "(?:.*\n){$num}";
+                        pos $self->{buffer}->{buffer} = $self->{buffer}->{pointer};
+                        $self->{buffer}->{buffer} =~ /$regex/g;
+                        $self->{buffer}->print($self->{buffer}->{pointer},
+                                               $+[0]);
+                    }
+                    else {
+                        my $rev = reverse $self->{buffer}->{buffer};
+                        my $regex = ".*?(?:\n.*?){$num}(?=\n|\$)";
+                        pos $rev = length($self->{buffer}->{buffer}) - $self->{buffer}->{pointer};
+                        $rev =~ /$regex/sg;
+                        $self->{buffer}->print(length($self->{buffer}->{buffer}) - $+[0], $self->{buffer}->{pointer});
+                    }
+                }
+            });
+        }
     }
 }
 
