@@ -26,11 +26,11 @@ sub reset {
 
     $self->{command}     = '';
     $self->{current_num} = 'n1';
-    $self->{n1} = undef;
-    $self->{n2} = undef;
-    $self->{at} = 0;
-    $self->{colon} = 0;
-    $self->{negate} = 0;
+    $self->{n1}          = undef;
+    $self->{n2}          = undef;
+    $self->{at}          = 0;
+    $self->{colon}       = 0;
+    $self->{negate}      = 0;
 }
 
 sub num {
