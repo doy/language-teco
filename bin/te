@@ -34,7 +34,7 @@ COMMAND: while (1) {
                 ReadMode 3;
                 local $SIG{INT} = sub { die "interrupted!" };
                 eval { $te->execute($command) };
-                print "ERROR: $@\n" if $@;
+                print "?  $@\n" if $@;
                 ReadMode 4;
                 last KEY;
             }
