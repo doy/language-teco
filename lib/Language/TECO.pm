@@ -187,7 +187,7 @@ sub execute {
                     }
                     my $num = $self->num;
                     if ($num > 0) {
-                        my $regex = "(?:.*\n){$num}";
+                        my $regex = "(?:.*(?:\n|\$)){$num}";
                         pos $self->{buffer}->{buffer} = $self->{buffer}->{pointer};
                         $self->{buffer}->{buffer} =~ /$regex/g;
                         $self->{buffer}->print($self->{buffer}->{pointer},
