@@ -33,8 +33,9 @@ COMMAND: while (1) {
                 print "\n";
                 ReadMode 3;
                 local $SIG{INT} = sub { die "Execution interrupted" };
-                eval { $te->execute($command) };
+                my $result = eval { $te->execute($command) };
                 print "?  $@\n" if $@;
+                print $result if defined $result;
                 ReadMode 4;
                 last KEY;
             }

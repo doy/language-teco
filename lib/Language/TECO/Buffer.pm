@@ -15,11 +15,13 @@ sub set {
     my $pointer = shift;
     die 'Pointer off page' if $pointer < 0 || $pointer > length $self->{buffer};
     $self->{pointer} = $pointer;
+    return;
 }
 
 sub offset {
     my $self = shift;
     $self->set($self->{pointer} + shift);
+    return;
 }
 
 sub insert {
@@ -27,6 +29,7 @@ sub insert {
     my $text = shift;
     substr($self->{buffer}, $self->{pointer}, 0) = $text;
     $self->offset(length $text);
+    return;
 }
 
 sub delete {
@@ -48,6 +51,7 @@ sub delete {
     die "Pointer off page"
         if $self->{pointer} + $length > length $self->{buffer};
     substr($self->{buffer}, $self->{pointer}, $length) = '';
+    return;
 }
 
 sub endpos { length shift->{buffer} }
@@ -57,7 +61,7 @@ sub curpos { shift->{pointer} }
 sub print {
     my $self = shift;
     my ($start, $end) = @_;
-    print substr $self->{buffer}, $start, $end - $start;
+    return substr $self->{buffer}, $start, $end - $start;
 }
 
 sub get_line_offset {

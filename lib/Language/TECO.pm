@@ -90,6 +90,7 @@ sub push_cmd {
 sub execute {
     my $self = shift;
     $self->{command} = shift;
+    my $ret = '';
 
     while ($self->{command}) {
         $_ = substr($self->{command}, 0, 1, '');
@@ -215,11 +216,13 @@ sub execute {
                         $self->num(1);
                     }
                     my $num = $self->num;
-                    $self->{buffer}->print($self->{buffer}->get_line_offset($num));
+                    $ret .= $self->{buffer}->print($self->{buffer}->get_line_offset($num));
                 }
             });
         }
     }
+
+    return $ret;
 }
 
 =head1 NAME
