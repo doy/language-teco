@@ -182,6 +182,9 @@ sub execute {
                     $self->{buffer}->print(($self->num));
                 }
                 else {
+                    if (!defined $self->num) {
+                        $self->num(1);
+                    }
                     my $num = $self->num;
                     if ($num > 0) {
                         my $regex = "(?:.*\n){$num}";
