@@ -13,6 +13,9 @@ sub new {
     return $object;
 }
 
+sub buffer  { shift->{buffer}->{buffer}  }
+sub pointer { shift->{buffer}->{pointer} }
+
 sub reset {
     my $self = shift;
 
