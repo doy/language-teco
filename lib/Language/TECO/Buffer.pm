@@ -67,7 +67,8 @@ sub get_line_offset {
     if ($num > 0) {
         pos $self->{buffer} = $self->{pointer};
         $self->{buffer} =~ /(?:.*(?:\n|$)){$num}/g;
-        return ($-[0], $+[0]);
+        return ($-[0], $+[0]) if wantarray;
+        return $+[0];
     }
     else {
         $num = -$num;
@@ -75,7 +76,8 @@ sub get_line_offset {
         my $len = length $self->{buffer};
         pos $rev = $len - $self->{pointer};
         $rev =~ /.*?(?:\n.*?){$num}(?=\n|$)/g;
-        return ($len - $+[0], $len - $-[0]);
+        return ($len - $+[0], $len - $-[0]) if wantarray;
+        return $len - $+[0];
     }
 }
 
