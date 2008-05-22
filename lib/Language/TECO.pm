@@ -154,6 +154,21 @@ sub execute {
                 $self->{buffer}->delete($self->num);
             });
         }
+        elsif (/k/i) {
+            $self->cmd(sub {
+                my $self = shift;
+                if (defined $self->{n2}) {
+                    $self->{buffer}->delete(($self->num));
+                }
+                else {
+                    if (!defined $self->num) {
+                        $self->num(1);
+                    }
+                    my $num = $self->num;
+                    $self->{buffer}->delete($self->{buffer}->get_line_offset($num));
+                }
+            });
+        }
         elsif (/j/i) {
             if (!defined $self->num) {
                 $self->num(0);
