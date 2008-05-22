@@ -1,0 +1,26 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+package Bot::TecoBot;
+use base 'Bot::BasicBot';
+use Language::TECO;
+
+my %users;
+sub said {
+    my $self = shift;
+    my %args = %{ shift() };
+
+    return unless $args{body} =~ s/^!teco // || $args{address};
+    $users{$args{who}} = Language::TECO->new unless exists $users{$args{who}};
+    return $users{$args{who}}->execute($args{body});
+}
+
+package main;
+
+Bot::TecoBot->new(
+    server => 'irc.freenode.net',
+    channels => ['#doytest'],
+    nick => 'tecobot',
+    username => 'tecobot',
+    name => 'tecobot',
+)->run;
