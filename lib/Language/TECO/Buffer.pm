@@ -17,8 +17,8 @@ sub endpos { length shift->{buffer} }
 sub buffer {
     my $self = shift;
     my ($start, $end) = @_;
-    $start = 0 unless defined $start;
-    $end = $self->endpos unless defined $end;
+    $start = 0 if !defined $start || $start < 0;
+    $end = $self->endpos if !defined $end || $end > $self->endpos;
     ($start, $end) = ($end, $start) if $start > $end;
     return substr $self->{buffer}, $start, $end - $start;
 }
