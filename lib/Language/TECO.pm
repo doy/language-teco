@@ -24,7 +24,6 @@ sub has_range { defined shift->{n2}    }
 sub reset {
     my $self = shift;
 
-    $self->{command}     = '';
     $self->{current_num} = 'n1';
     $self->{n1}          = undef;
     $self->{n2}          = undef;
