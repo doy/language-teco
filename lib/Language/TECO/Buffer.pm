@@ -71,7 +71,7 @@ sub get_line_offset {
 
     if ($num > 0) {
         pos $self->{buffer} = $self->curpos;
-        $self->{buffer} =~ /(?:.*(?:\n|$)){$num}/g;
+        $self->{buffer} =~ /(?:.*(?:\n|$)){0,$num}/g;
         return ($-[0], $+[0]) if wantarray;
         return $+[0];
     }
@@ -80,7 +80,7 @@ sub get_line_offset {
         my $rev = reverse $self->buffer;
         my $len = $self->endpos;
         pos $rev = $len - $self->curpos;
-        $rev =~ /.*?(?:\n.*?){$num}(?=\n|$)/g;
+        $rev =~ /.*?(?:\n.*?){0,$num}(?=\n|$)/g;
         return ($len - $+[0], $len - $-[0]) if wantarray;
         return $len - $+[0];
     }
