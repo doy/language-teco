@@ -19,6 +19,7 @@ sub buffer {
     my ($start, $end) = @_;
     $start = 0 unless defined $start;
     $end = $self->endpos unless defined $end;
+    ($start, $end) = ($end, $start) if $start > $end;
     return substr $self->{buffer}, $start, $end - $start;
 }
 
@@ -46,23 +47,12 @@ sub insert {
 
 sub delete {
     my $self = shift;
-    my $length;
-    if (@_ > 1) {
-        my $pos = shift;
-        $self->set($pos);
-        $length = shift() - $pos;
-    }
-    else {
-        $length = shift;
-    }
+    my ($start, $end) = @_;
+    ($start, $end) = ($end, $start) if $start > $end;
 
-    if ($length < 0) {
-        $length = -$length;
-        $self->offset(-$length);
-    }
-    die "Pointer off page"
-        if $self->curpos + $length > $self->endpos;
-    substr($self->{buffer}, $self->curpos, $length) = '';
+    die "Pointer off page" if $start < 0 || $end > $self->endpos;
+    substr($self->{buffer}, $start, $end - $start) = '';
+    $self->set($start);
     return;
 }
 

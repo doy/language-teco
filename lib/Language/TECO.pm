@@ -157,7 +157,7 @@ sub execute {
             }
             $self->cmd(sub {
                 my $self = shift;
-                $self->buf->delete($self->num);
+                $self->buf->delete($self->pointer, $self->pointer + $self->num);
             });
         }
         elsif (/k/i) {
