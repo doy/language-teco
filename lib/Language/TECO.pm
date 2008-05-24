@@ -148,7 +148,7 @@ sub execute {
             }
         }
         elsif (/d/i) {
-            if (defined $self->{n2}) {
+            if ($self->has_range) {
                 $self->push_cmd('k');
                 redo;
             }
