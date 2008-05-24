@@ -211,8 +211,11 @@ sub execute {
             });
         }
         elsif (/=/i) {
-            my $fmt = ($self->{command} =~ s/^=//) ? "%o%s" : "%d%s";
-            $ret .= sprintf $fmt, $self->num, $self->colon ? "" : "\n";
+            $self->cmd(sub {
+                my $self = shift;
+                my $fmt = ($self->{command} =~ s/^=//) ? "%o%s" : "%d%s";
+                $ret .= sprintf $fmt, $self->num, $self->colon ? "" : "\n";
+            });
         }
         elsif (/t/i) {
             $self->cmd(sub {
