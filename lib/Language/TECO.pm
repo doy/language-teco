@@ -218,7 +218,7 @@ sub execute {
             $self->cmd(sub {
                 my $self = shift;
                 if ($self->has_range) {
-                    $self->buffer($self->num);
+                    $ret .= $self->buffer($self->num);
                 }
                 else {
                     if (!defined $self->num) {
