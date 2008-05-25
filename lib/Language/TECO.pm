@@ -19,7 +19,6 @@ sub new {
 sub buffer    { shift->buf->buffer(@_) }
 sub pointer   { shift->buf->curpos     }
 sub buflen    { shift->buf->endpos     }
-sub has_range { defined shift->{num2}    }
 
 sub reset {
     my $self = shift;
@@ -48,10 +47,12 @@ sub num {
         @_ = (-$_[0]);
         $self->negate(0);
     }
+    my $ret = $self->_num_accessor(@_);
+    $ret = 0 unless defined $ret;
     if (wantarray && $self->has_range) {
-        return ($self->{num2}, $self->_num_accessor(@_));
+        return ($self->{num2}, $ret);
     }
-    return $self->_num_accessor(@_);
+    return $ret;
 }
 
 sub shift_num {
@@ -59,6 +60,9 @@ sub shift_num {
     $self->{num2} = $self->{num};
     $self->{num} = undef;
 }
+
+sub has_num   { defined shift->{num}  }
+sub has_range { defined shift->{num2} }
 
 sub get_string {
     my $self = shift;
@@ -129,7 +133,7 @@ sub try_cmd {
         $need_reset = 0;
     }
     elsif ($command =~ s/^i//i) {
-        if (defined $self->num) {
+        if ($self->has_num) {
             $self->buf->insert(chr($self->num))
         }
         else {
@@ -144,7 +148,7 @@ sub try_cmd {
             $need_reset = 0;
         }
         else {
-            if (!defined $self->num) {
+            if (!$self->has_num) {
                 $self->num(1);
             }
             $self->buf->delete($self->pointer, $self->pointer + $self->num);
@@ -155,26 +159,26 @@ sub try_cmd {
             $self->buf->delete($self->num);
         }
         else {
-            if (!defined $self->num) {
+            if (!$self->has_num) {
                 $self->num(1);
             }
             $self->buf->delete($self->buf->get_line_offset(scalar $self->num));
         }
     }
     elsif ($command =~ s/^j//i) {
-        if (!defined $self->num) {
+        if (!$self->has_num) {
             $self->num(0);
         }
         $self->buf->set($self->num);
     }
     elsif ($command =~ s/^c//i) {
-        if (!defined $self->num) {
+        if (!$self->has_num) {
             $self->num(1);
         }
         $self->buf->offset($self->num);
     }
     elsif ($command =~ s/^r//i) {
-        if (!defined $self->num) {
+        if (!$self->has_num) {
             $self->num(1);
         }
         $self->num(-$self->num);
@@ -182,7 +186,7 @@ sub try_cmd {
         $need_reset = 0;
     }
     elsif ($command =~ s/^l//i) {
-        if (!defined $self->num) {
+        if (!$self->has_num) {
             $self->num(1);
         }
         $self->buf->set(scalar $self->buf->get_line_offset(scalar $self->num));
@@ -196,7 +200,7 @@ sub try_cmd {
             $self->ret($self->buffer($self->num));
         }
         else {
-            if (!defined $self->num) {
+            if (!$self->has_num) {
                 $self->num(1);
             }
             $self->ret($self->buffer($self->buf->get_line_offset(scalar $self->num)));
