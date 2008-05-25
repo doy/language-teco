@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Language::TECO::Buffer;
 use base 'Class::Accessor::Fast';
-Language::TECO->mk_accessors qw/at colon negate current_num want_num/;
+Language::TECO->mk_accessors qw/at colon negate current_num want_num ret/;
 Language::TECO->mk_ro_accessors qw/buf/;
 
 sub new {
@@ -34,6 +34,14 @@ sub reset {
 
     $self->{want_num}    = 1;
 }
+
+sub ret {
+    my $self = shift;
+    $_[0] = $self->{ret} . $_[0] if (@_);
+    return $self->_ret_accessor(@_);
+}
+
+sub clear_ret { shift->{ret} = '' }
 
 sub num {
     my $self = shift;
@@ -189,17 +197,17 @@ sub try_cmd {
     }
     elsif ($command =~ s/^=//) {
         my $fmt = ($command =~ s/^=//) ? "%o%s" : "%d%s";
-        $self->{ret} .= sprintf $fmt, $self->num, $self->colon ? "" : "\n";
+        $self->ret(sprintf $fmt, $self->num, $self->colon ? "" : "\n");
     }
     elsif ($command =~ s/^t//i) {
         if ($self->has_range) {
-            $self->{ret} .= $self->buffer($self->num);
+            $self->ret($self->buffer($self->num));
         }
         else {
             if (!defined $self->num) {
                 $self->num(1);
             }
-            $self->{ret} .= $self->buffer($self->buf->get_line_offset(scalar $self->num));
+            $self->ret($self->buffer($self->buf->get_line_offset(scalar $self->num)));
         }
     }
 
@@ -211,7 +219,7 @@ sub try_cmd {
 sub execute {
     my $self = shift;
     my $command = shift;
-    $self->{ret} = '';
+    $self->clear_ret;
 
     while ($command) {
         if ($self->want_num) {
@@ -221,7 +229,7 @@ sub execute {
         $command = $self->try_cmd($command);
     }
 
-    return $self->{ret};
+    return $self->ret;
 }
 
 =head1 NAME
