@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Language::TECO::Buffer;
 use base 'Class::Accessor::Fast';
-Language::TECO->mk_accessors qw/at colon negate want_num ret/;
+Language::TECO->mk_accessors qw/num at colon negate want_num ret/;
 Language::TECO->mk_ro_accessors qw/buf/;
 
 sub new {
@@ -19,13 +19,13 @@ sub new {
 sub buffer    { shift->buf->buffer(@_) }
 sub pointer   { shift->buf->curpos     }
 sub buflen    { shift->buf->endpos     }
-sub has_range { defined shift->{n2}    }
+sub has_range { defined shift->{num2}    }
 
 sub reset {
     my $self = shift;
 
-    $self->{n1}          = undef;
-    $self->{n2}          = undef;
+    $self->{num}         = undef;
+    $self->{num2}        = undef;
 
     $self->{at}          = 0;
     $self->{colon}       = 0;
@@ -44,23 +44,14 @@ sub clear_ret { shift->{ret} = '' }
 
 sub num {
     my $self = shift;
-
-    if (@_) {
-        my $num = shift;
-        if ($self->negate) {
-            $num = -$num;
-            $self->negate(0);
-        }
-        $self->{n1} = $num;
+    if (@_ && $self->negate) {
+        @_ = (-$_[0]);
+        $self->negate(0);
     }
-    else {
-        if (wantarray && $self->has_range) {
-            return ($self->{n2}, $self->{n1});
-        }
-        else {
-            return $self->{n1};
-        }
+    if (wantarray && $self->has_range) {
+        return ($self->{num2}, $self->_num_accessor(@_));
     }
+    return $self->_num_accessor(@_);
 }
 
 sub get_string {
@@ -119,7 +110,7 @@ sub try_cmd {
 
     my $need_reset = 1;
     if ($command =~ s/^,//) {
-        $self->{n2} = $self->num;
+        $self->{num2} = $self->num;
         $self->num(undef);
         $self->want_num(1);
         $need_reset = 0;
