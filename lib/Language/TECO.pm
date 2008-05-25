@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Language::TECO::Buffer;
 use base 'Class::Accessor::Fast';
-Language::TECO->mk_accessors qw/at colon negate current_num/;
+Language::TECO->mk_accessors qw/at colon negate current_num want_num/;
 Language::TECO->mk_ro_accessors qw/buf/;
 
 sub new {
@@ -27,9 +27,12 @@ sub reset {
     $self->{current_num} = 'n1';
     $self->{n1}          = undef;
     $self->{n2}          = undef;
+
     $self->{at}          = 0;
     $self->{colon}       = 0;
     $self->{negate}      = 0;
+
+    $self->{want_num}    = 1;
 }
 
 sub num {
@@ -53,187 +56,172 @@ sub num {
     }
 }
 
-sub cmd {
+sub get_string {
     my $self = shift;
-    my $code = shift;
+    my $command = shift;
+    my $str;
 
-    $self->current_num('n1');
+    if ($self->at) {
+        $command =~ s/(.)(.*?)\1//s;
+        $str = $2;
+    }
+    else {
+        $command =~ s/(.*?)\e//s;
+        $str = $1;
+    }
 
-    $code->($self);
-
-    $self->reset;
+    return ($str, $command);
 }
 
-sub cmd_with_string {
+sub try_num {
     my $self = shift;
-    my $code = shift;
+    my $command = shift;
 
-    return $self->cmd(sub {
-        my $self = shift;
-        my $str = '';
+    $self->want_num(0);
+    if ($command =~ s/^([0-9])//) {
+        my $num = $self->num || 0;
+        my $prev = $1;
+        $prev = -$prev if $num < 0;
+        $self->num($num * 10 + $prev);
+        $self->want_num(1);
+    }
+    elsif ($command =~ s/^-//) {
+        $self->negate(1);
+        $self->want_num(1);
+    }
+    elsif ($command =~ s/^b//i) {
+        $self->num(0);
+    }
+    elsif ($command =~ s/^z//i) {
+        $self->num($self->buflen);
+    }
+    elsif ($command =~ s/^\.//) {
+        $self->num($self->pointer);
+    }
+    elsif ($command =~ s/^h//i) {
+        $command = 'b,z'.$command;
+        $self->want_num(1);
+    }
+    elsif ($command =~ s/^\cy//) {
+        $command = ".+\cs,.".$command;
+        $self->want_num(1);
+    }
 
-        if ($self->at) {
-            $self->{command} =~ s/(.)(.*?)\1//s;
-            $str = $2;
+    return $command;
+}
+
+sub try_cmd {
+    my $self = shift;
+    my $command = shift;
+
+    my $need_reset = 1;
+    if ($command =~ s/^,//) {
+        $self->current_num('n2');
+        $self->want_num(1);
+        $need_reset = 0;
+    }
+    elsif ($command =~ s/^://) {
+        $self->colon(1);
+        $need_reset = 0;
+    }
+    elsif ($command =~ s/^@//) {
+        $self->at(1);
+        $need_reset = 0;
+    }
+    elsif ($command =~ s/^i//i) {
+        if (defined $self->num) {
+            $self->buf->insert(chr($self->num))
         }
         else {
-            $self->{command} =~ s/(.*?)\e//s;
-            $str = $1;
+            my $str;
+            ($str, $command) = $self->get_string($command);
+            $self->buf->insert($str);
         }
+    }
+    elsif ($command =~ s/^d//i) {
+        if ($self->has_range) {
+            $command = 'k'.$command;
+            $need_reset = 0;
+        }
+        else {
+            if (!defined $self->num) {
+                $self->num(1);
+            }
+            $self->buf->delete($self->pointer, $self->pointer + $self->num);
+        }
+    }
+    elsif ($command =~ s/^k//i) {
+        if ($self->has_range) {
+            $self->buf->delete($self->num);
+        }
+        else {
+            if (!defined $self->num) {
+                $self->num(1);
+            }
+            $self->buf->delete($self->buf->get_line_offset(scalar $self->num));
+        }
+    }
+    elsif ($command =~ s/^j//i) {
+        if (!defined $self->num) {
+            $self->num(0);
+        }
+        $self->buf->set($self->num);
+    }
+    elsif ($command =~ s/^c//i) {
+        if (!defined $self->num) {
+            $self->num(1);
+        }
+        $self->buf->offset($self->num);
+    }
+    elsif ($command =~ s/^r//i) {
+        if (!defined $self->num) {
+            $self->num(1);
+        }
+        $self->num(-$self->num);
+        $command = 'c'.$command;
+        $need_reset = 0;
+    }
+    elsif ($command =~ s/^l//i) {
+        if (!defined $self->num) {
+            $self->num(1);
+        }
+        $self->buf->set(scalar $self->buf->get_line_offset(scalar $self->num));
+    }
+    elsif ($command =~ s/^=//) {
+        my $fmt = ($command =~ s/^=//) ? "%o%s" : "%d%s";
+        $self->{ret} .= sprintf $fmt, $self->num, $self->colon ? "" : "\n";
+    }
+    elsif ($command =~ s/^t//i) {
+        if ($self->has_range) {
+            $self->{ret} .= $self->buffer($self->num);
+        }
+        else {
+            if (!defined $self->num) {
+                $self->num(1);
+            }
+            $self->{ret} .= $self->buffer($self->buf->get_line_offset(scalar $self->num));
+        }
+    }
 
-        $code->($self, $str);
-    });
-}
+    $self->reset if $need_reset;
 
-sub push_cmd {
-    my $self = shift;
-    my $to_push = shift;
-    $self->{command} = $to_push . $self->{command};
+    return $command;
 }
 
 sub execute {
     my $self = shift;
-    $self->{command} = shift;
-    my $ret = '';
+    my $command = shift;
+    $self->{ret} = '';
 
-    while ($self->{command}) {
-        $_ = substr($self->{command}, 0, 1, '');
-        if (/[0-9]/) {
-            my $num = $self->num || 0;
-            $_ = -$_ if $num < 0;
-            $self->num($num * 10 + $_);
+    while ($command) {
+        if ($self->want_num) {
+            $command = $self->try_num($command);
+            next;
         }
-        elsif (/-/) {
-            $self->negate(1);
-        }
-        elsif (/b/i) {
-            $self->num(0);
-        }
-        elsif (/z/i) {
-            $self->num($self->buflen);
-        }
-        elsif (/\./) {
-            $self->num($self->pointer);
-        }
-        elsif (/h/i) {
-            $self->push_cmd('b,z');
-            redo;
-        }
-        elsif (/\cy/) {
-            $self->push_cmd(".+\cs,.");
-            redo;
-        }
-        elsif (/,/) {
-            $self->current_num('n2');
-        }
-        elsif (/:/) {
-            $self->colon(1);
-        }
-        elsif (/@/) {
-            $self->at(1);
-        }
-        elsif (/i/i) {
-            if (defined $self->num) {
-                $self->cmd(sub {
-                    my $self = shift;
-                    $self->buf->insert(chr($self->num))
-                });
-            }
-            else {
-                $self->cmd_with_string(sub {
-                    my $self = shift;
-                    $self->buf->insert(shift);
-                });
-            }
-        }
-        elsif (/d/i) {
-            if ($self->has_range) {
-                $self->push_cmd('k');
-                redo;
-            }
-            if (!defined $self->num) {
-                $self->num(1);
-            }
-            $self->cmd(sub {
-                my $self = shift;
-                $self->buf->delete($self->pointer, $self->pointer + $self->num);
-            });
-        }
-        elsif (/k/i) {
-            $self->cmd(sub {
-                my $self = shift;
-                if ($self->has_range) {
-                    $self->buf->delete($self->num);
-                }
-                else {
-                    if (!defined $self->num) {
-                        $self->num(1);
-                    }
-                    my $num = $self->num;
-                    $self->buf->delete($self->buf->get_line_offset($num));
-                }
-            });
-        }
-        elsif (/j/i) {
-            if (!defined $self->num) {
-                $self->num(0);
-            }
-            $self->cmd(sub {
-                my $self = shift;
-                $self->buf->set($self->num);
-            });
-        }
-        elsif (/c/i) {
-            if (!defined $self->num) {
-                $self->num(1);
-            }
-            $self->cmd(sub {
-                my $self = shift;
-                $self->buf->offset($self->num);
-            });
-        }
-        elsif (/r/i) {
-            if (!defined $self->num) {
-                $self->num(1);
-            }
-            $self->num(-$self->num);
-            $self->push_cmd('c');
-            redo;
-        }
-        elsif (/l/i) {
-            $self->cmd(sub {
-                my $self = shift;
-                if (!defined $self->num) {
-                    $self->num(1);
-                }
-                $self->buf->set(scalar $self->buf->get_line_offset($self->num));
-            });
-        }
-        elsif (/=/i) {
-            $self->cmd(sub {
-                my $self = shift;
-                my $fmt = ($self->{command} =~ s/^=//) ? "%o%s" : "%d%s";
-                $ret .= sprintf $fmt, $self->num, $self->colon ? "" : "\n";
-            });
-        }
-        elsif (/t/i) {
-            $self->cmd(sub {
-                my $self = shift;
-                if ($self->has_range) {
-                    $ret .= $self->buffer($self->num);
-                }
-                else {
-                    if (!defined $self->num) {
-                        $self->num(1);
-                    }
-                    my $num = $self->num;
-                    $ret .= $self->buffer($self->buf->get_line_offset($num));
-                }
-            });
-        }
+        $command = $self->try_cmd($command);
     }
 
-    return $ret;
+    return $self->{ret};
 }
 
 =head1 NAME
