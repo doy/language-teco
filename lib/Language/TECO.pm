@@ -54,6 +54,12 @@ sub num {
     return $self->_num_accessor(@_);
 }
 
+sub shift_num {
+    my $self = shift;
+    $self->{num2} = $self->{num};
+    $self->{num} = undef;
+}
+
 sub get_string {
     my $self = shift;
     my $command = shift;
@@ -110,8 +116,7 @@ sub try_cmd {
 
     my $need_reset = 1;
     if ($command =~ s/^,//) {
-        $self->{num2} = $self->num;
-        $self->num(undef);
+        $self->shift_num;
         $self->want_num(1);
         $need_reset = 0;
     }
