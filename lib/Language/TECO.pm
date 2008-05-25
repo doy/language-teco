@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Language::TECO::Buffer;
 use base 'Class::Accessor::Fast';
-Language::TECO->mk_accessors qw/at colon negate current_num want_num ret/;
+Language::TECO->mk_accessors qw/at colon negate want_num ret/;
 Language::TECO->mk_ro_accessors qw/buf/;
 
 sub new {
@@ -24,7 +24,6 @@ sub has_range { defined shift->{n2}    }
 sub reset {
     my $self = shift;
 
-    $self->{current_num} = 'n1';
     $self->{n1}          = undef;
     $self->{n2}          = undef;
 
@@ -45,21 +44,21 @@ sub clear_ret { shift->{ret} = '' }
 
 sub num {
     my $self = shift;
-    my $num = shift;
 
-    if (defined $num) {
+    if (@_) {
+        my $num = shift;
         if ($self->negate) {
             $num = -$num;
             $self->negate(0);
         }
-        $self->{$self->current_num} = $num;
+        $self->{n1} = $num;
     }
     else {
         if (wantarray && $self->has_range) {
-            return ($self->{n1}, $self->{n2});
+            return ($self->{n2}, $self->{n1});
         }
         else {
-            return $self->{$self->current_num};
+            return $self->{n1};
         }
     }
 }
@@ -86,12 +85,8 @@ sub try_num {
     my $command = shift;
 
     $self->want_num(0);
-    if ($command =~ s/^([0-9])//) {
-        my $num = $self->num || 0;
-        my $prev = $1;
-        $prev = -$prev if $num < 0;
-        $self->num($num * 10 + $prev);
-        $self->want_num(1);
+    if ($command =~ s/^([0-9]+)//) {
+        $self->num($1);
     }
     elsif ($command =~ s/^-//) {
         $self->negate(1);
@@ -124,7 +119,8 @@ sub try_cmd {
 
     my $need_reset = 1;
     if ($command =~ s/^,//) {
-        $self->current_num('n2');
+        $self->{n2} = $self->num;
+        $self->num(undef);
         $self->want_num(1);
         $need_reset = 0;
     }
