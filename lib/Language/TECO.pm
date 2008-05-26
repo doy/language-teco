@@ -198,8 +198,7 @@ sub try_cmd {
             $self->num(1);
         }
         $self->num(-$self->num);
-        $command = 'c'.$command;
-        $need_reset = 0;
+        $command = $self->try_cmd('c'.$command);
     }
     elsif ($command =~ s/^l//i) {
         if (!$self->has_num) {
