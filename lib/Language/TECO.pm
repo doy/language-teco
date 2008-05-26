@@ -231,6 +231,7 @@ sub execute {
     my $self = shift;
     my $command = shift;
     $self->clear_ret;
+    $self->reset;
 
     while ($command) {
         my ($num, $negate);
