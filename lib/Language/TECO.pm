@@ -242,7 +242,9 @@ sub execute {
         elsif ($negate) {
             $self->negate(1);
         }
-        $command = $self->try_cmd($command);
+        my $new_command = $self->try_cmd($command);
+        substr($new_command, 0, 1, '') if $new_command eq $command;
+        $command = $new_command;
     }
 
     return $self->ret;
