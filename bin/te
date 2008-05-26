@@ -32,7 +32,7 @@ COMMAND: while (1) {
             if ($pc eq "\e") {
                 print "\n";
                 ReadMode 3;
-                local $SIG{INT} = sub { die "Execution interrupted" };
+                local $SIG{INT} = sub { die "Execution interrupted\n" };
                 my $result = eval { $te->execute($command) };
                 print "?  $@\n" if $@;
                 print $result if defined $result;

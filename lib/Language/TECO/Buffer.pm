@@ -26,7 +26,7 @@ sub buffer {
 sub set {
     my $self = shift;
     my $pointer = shift;
-    die 'Pointer off page' if $pointer < 0 || $pointer > $self->endpos;
+    die "Pointer off page\n" if $pointer < 0 || $pointer > $self->endpos;
     $self->{pointer} = $pointer;
     return;
 }
@@ -50,7 +50,7 @@ sub delete {
     my ($start, $end) = @_;
     ($start, $end) = ($end, $start) if $start > $end;
 
-    die "Pointer off page" if $start < 0 || $end > $self->endpos;
+    die "Pointer off page\n" if $start < 0 || $end > $self->endpos;
     substr($self->{buffer}, $start, $end - $start) = '';
     $self->set($start);
     return;
