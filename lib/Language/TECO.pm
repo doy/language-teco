@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Language::TECO::Buffer;
 use base 'Class::Accessor::Fast';
-Language::TECO->mk_accessors qw/num at colon negate want_num ret/;
+Language::TECO->mk_accessors qw/num at colon negate ret/;
 Language::TECO->mk_ro_accessors qw/buf/;
 
 sub new {
@@ -29,8 +29,6 @@ sub reset {
     $self->{at}          = 0;
     $self->{colon}       = 0;
     $self->{negate}      = 0;
-
-    $self->{want_num}    = 1;
 }
 
 sub ret {
@@ -83,35 +81,54 @@ sub get_string {
 
 sub try_num {
     my $self = shift;
-    my $command = shift;
+    my ($num, $command, $negate) = @_;
+    my $num2;
 
-    $self->want_num(0);
     if ($command =~ s/^([0-9]+)//) {
-        $self->num($1);
+        return $self->try_num($1, $command);
+    }
+    elsif ($command =~ s/^\+//) {
+        ($num2, $command) = $self->try_num(undef, $command);
+        return $self->try_num(defined $num2 ? ($num || 0) + $num2 : undef, $command);
     }
     elsif ($command =~ s/^-//) {
-        $self->negate(1);
-        $self->want_num(1);
+        ($num2, $command) = $self->try_num(undef, $command);
+        return $self->try_num(defined $num2 ? ($num || 0) - $num2 : undef, $command, 1);
+    }
+    elsif ($command =~ s/^\*//) {
+        ($num2, $command) = $self->try_num(undef, $command);
+        return $self->try_num(defined $num2 ? ($num || 0) * $num2 : undef, $command);
+    }
+    elsif ($command =~ s/^\///) {
+        ($num2, $command) = $self->try_num(undef, $command);
+        return $self->try_num(defined $num2 ? ($num || 0) / $num2 : undef, $command);
+    }
+    elsif ($command =~ s/^&//) {
+        ($num2, $command) = $self->try_num(undef, $command);
+        return $self->try_num(defined $num2 ? ($num || 0) & $num2 : undef, $command);
+    }
+    elsif ($command =~ s/^#//) {
+        ($num2, $command) = $self->try_num(undef, $command);
+        return $self->try_num(defined $num2 ? ($num || 0) | $num2 : undef, $command);
     }
     elsif ($command =~ s/^b//i) {
-        $self->num(0);
+        return $self->try_num(0, $command);
     }
     elsif ($command =~ s/^z//i) {
-        $self->num($self->buflen);
+        return $self->try_num($self->buflen, $command);
     }
     elsif ($command =~ s/^\.//) {
-        $self->num($self->pointer);
+        return $self->try_num($self->pointer, $command);
     }
     elsif ($command =~ s/^h//i) {
-        $command = 'b,z'.$command;
-        $self->want_num(1);
+        return $self->try_num($num, 'b,z'.$command);
     }
     elsif ($command =~ s/^\cy//) {
-        $command = ".+\cs,.".$command;
-        $self->want_num(1);
+        return $self->try_num($num, ".+\cs,.".$command);
     }
-
-    return $command;
+    else {
+        return ($num, $command, $negate);
+    }
 }
 
 sub try_cmd {
@@ -121,7 +138,6 @@ sub try_cmd {
     my $need_reset = 1;
     if ($command =~ s/^,//) {
         $self->shift_num;
-        $self->want_num(1);
         $need_reset = 0;
     }
     elsif ($command =~ s/^://) {
@@ -218,9 +234,13 @@ sub execute {
     $self->clear_ret;
 
     while ($command) {
-        if ($self->want_num) {
-            $command = $self->try_num($command);
-            next;
+        my ($num, $negate);
+        ($num, $command, $negate) = $self->try_num(undef, $command);
+        if (defined $num) {
+            $self->num($num);
+        }
+        elsif ($negate) {
+            $self->negate(1);
         }
         $command = $self->try_cmd($command);
     }
