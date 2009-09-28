@@ -1,4 +1,3 @@
-#!perl
 package Language::TECO;
 use strict;
 use warnings;
