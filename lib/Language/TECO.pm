@@ -1,65 +1,124 @@
 package Language::TECO;
-use strict;
-use warnings;
-use Language::TECO::Buffer;
-use base 'Class::Accessor::Fast';
-Language::TECO->mk_accessors qw/num at colon negate ret/;
-Language::TECO->mk_ro_accessors qw/buf/;
+use Moose;
+use Moose::Util::TypeConstraints;
 
-sub new {
+# XXX: move this elsewhere eventually
+subtype 'Buffer', as 'Language::TECO::Buffer';
+coerce  'Buffer', from 'Str',
+    via { require Language::TECO::Buffer; Language::TECO::Buffer->new($_) };
+
+has num => (
+    is        => 'rw',
+    isa       => 'Int',
+    lazy      => 1,
+    default   => sub { die "num is unset!" },
+    clearer   => '_clear_num',
+    predicate => 'has_num',
+);
+
+has num2 => (
+    is        => 'rw',
+    isa       => 'Int',
+    lazy      => 1,
+    default   => sub { die "num2 is unset!" },
+    clearer   => '_clear_num2',
+    predicate => 'has_range',
+);
+
+has at => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+    lazy    => 1,
+    clearer => '_clear_at',
+);
+
+has colon => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+    lazy    => 1,
+    clearer => '_clear_colon',
+);
+
+has negate => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+    lazy    => 1,
+    clearer => '_clear_negate',
+);
+
+has _ret => (
+    traits  => ['String'],
+    is      => 'rw',
+    isa     => 'Str',
+    default => '',
+    lazy    => 1,
+    clearer => 'clear_ret',
+    handles => {
+        _append_ret => 'append',
+    },
+);
+
+has buf => (
+    is      => 'ro',
+    isa     => 'Buffer',
+    coerce  => 1,
+    default => sub {
+        require Language::TECO::Buffer;
+        Language::TECO::Buffer->new;
+    },
+    handles => {
+        buffer  => 'buffer',
+        pointer => 'curpos',
+        buflen  => 'endpos',
+    }
+);
+
+around BUILDARGS => sub {
+    my $orig = shift;
     my $class = shift;
-    my $initial_buffer = shift;
-    my $object = { buf => Language::TECO::Buffer->new($initial_buffer) };
-    bless $object, $class;
-    $object->reset;
-    return $object;
-}
-
-sub buffer    { shift->buf->buffer(@_) }
-sub pointer   { shift->buf->curpos     }
-sub buflen    { shift->buf->endpos     }
+    unshift @_, 'buf' if @_ % 2 == 1;
+    return $class->$orig(@_);
+};
 
 sub reset {
     my $self = shift;
 
-    $self->{num}         = undef;
-    $self->{num2}        = undef;
-
-    $self->{at}          = 0;
-    $self->{colon}       = 0;
-    $self->{negate}      = 0;
+    for my $attr (qw(num num2 at colon negate)) {
+        my $method = "_clear_$attr";
+        $self->$method;
+    }
 }
 
+# XXX: is this really what i want? can i make this more sane?
 sub ret {
     my $self = shift;
-    $_[0] = $self->{ret} . $_[0] if (@_);
-    return $self->_ret_accessor(@_);
+    return $self->_ret unless @_;
+    return $self->_append_ret(shift);
 }
 
-sub clear_ret { shift->{ret} = '' }
-
-sub num {
+around num => sub {
+    my $orig = shift;
     my $self = shift;
     if (@_ && $self->negate) {
         @_ = (-$_[0]);
         $self->negate(0);
     }
-    my $ret = $self->_num_accessor(@_);
+    my $ret = $self->$orig(@_);
     $ret = 0 unless defined $ret;
     if (wantarray && $self->has_range) {
-        return ($self->{num2}, $ret);
+        return ($self->num2, $ret);
     }
     return $ret;
-}
+};
 
 sub shift_num {
     my $self = shift;
-    $self->{num2} = $self->{num};
-    $self->{num} = undef;
+    $self->num2($self->num);
+    $self->_clear_num;
 }
-
-sub has_num   { defined shift->{num}  }
-sub has_range { defined shift->{num2} }
 
 sub get_string {
     my $self = shift;
