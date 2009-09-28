@@ -3,5 +3,7 @@ use strict;
 use warnings;
 use Test::More tests => 1;
 
-use_ok 'Language::TECO';
+package Foo;
+::use_ok('Language::TECO')
+    or ::BAIL_OUT("couldn't load Language::TECO");
 
